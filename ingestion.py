@@ -2,9 +2,6 @@ import pdfplumber
 import re
 import math
 
-# -----------------------------
-# CONFIDENCE SCORING CLASSIFIER
-# -----------------------------
 def classify_block(text, metadata, page_stats):
     text = text.strip()
     if not text:
@@ -41,7 +38,7 @@ def classify_block(text, metadata, page_stats):
     common_verbs = r'\b(is|are|was|were|has|have|had|does|do|did|will|can|could|should|would)\b'
     has_verb = bool(re.search(common_verbs, text, re.IGNORECASE))
 
-    # --- RULE APPLICATION (SCORING) ---
+    # SCORING
 
     # 1. HEADER / FOOTER RULES (Spatial)
     if y_pct < 0.10 or y_pct > 0.90:
@@ -81,7 +78,7 @@ def classify_block(text, metadata, page_stats):
     if re.search(r'\d+$', text.strip()): # Ends with a number
         scores["INDEX"] += 0.2
 
-    # --- DECISION LOGIC ---
+    # DECISION LOGIC 
     # Find the category with the highest score
     best_match = max(scores, key=scores.get)
 
@@ -91,9 +88,6 @@ def classify_block(text, metadata, page_stats):
 
     return best_match
 
-# -----------------------------
-# MAIN INGESTION FUNCTION
-# -----------------------------
 def ingest_pdf(file_path):
     document_blocks = []
 
