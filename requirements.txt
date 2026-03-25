@@ -1,0 +1,9 @@
+# PDF Processing & Analytics
+pdfplumber==0.11.0
+
+# API & Networking
+httpx==0.27.0
+python-dotenv==1.0.1
+
+# Audio Utilities (Optional Helper)
+pydub==0.25.1
