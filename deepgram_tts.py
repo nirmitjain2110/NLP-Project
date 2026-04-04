@@ -12,7 +12,6 @@ llm_responses = {}
 
 class DeepgramVoiceEngine:
     def __init__(self):
-        # Using Aura-Asteria for a clear, professional female voice
         self.url = "https://api.deepgram.com/v1/speak?model=aura-asteria-en"
         self.audio_cache = {}
         self.cache_lock = threading.Lock()

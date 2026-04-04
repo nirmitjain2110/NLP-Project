@@ -1,22 +1,55 @@
-if __name__ == "__main__":
-    print("🚀 Starting Isolated Test for SmoothFlow NLP Router...\n")
-    # Mock data simulating Nirmit's ingestion output (from GCP PDF)
-    mock_document_blocks = [
-        {"type": "HEADER_FOOTER", "text": "--- PAGE 2 ---"},
-        {"type": "TITLE", "text": "Private Cloud in GCP"},
-        {"type": "BULLET", "text": "Lecture 5"},
-        {"type": "SENTENCE", "text": "In Google Cloud Platform (GCP), a Private Cloud generally refers to creating an isolated environment."},
-        {"type": "SENTENCE", "text": "While GCP itself is a public cloud provider, it offers multiple services."},
-        {"type": "BULLET", "text": "1. Private Cloud with VPC"},
-        {"type": "SENTENCE", "text": "A Virtual Private Cloud is a logically isolated network."},
-        {"type": "SENTENCE", "text": "With a VPC, you control IP address ranges."}
-    ]
-    # Calling the router module
-    audio_queue, llm_queue = nlp_based_router(mock_document_blocks)
-    # Printing the output to verify order and logic
-    print("🎧 AUDIO QUEUE (Strict Order Maintained):")
+import os
+from ingestion import ingest_pdf   # your existing function
+from router import nlp_based_router  # your router file
+
+def test_router_on_pdf():
+    """
+    End-to-end test:
+    PDF → ingestion → routing → inspect queues
+    """
+
+    # Path to your PDF (same repo)
+    pdf_path = os.path.join(os.path.dirname(__file__), "generic_test_document.pdf")
+
+    print("\nLoading PDF:", pdf_path)
+
+    # Step 1: Ingest PDF
+    document_blocks = ingest_pdf(pdf_path)
+
+    print(f"\n Total Blocks Extracted: {len(document_blocks)}")
+
+    # Debug: show block types
+    print("\n--- Extracted Blocks ---")
+    for i, block in enumerate(document_blocks):
+        print(f"[{i}] ({block['type']}) -> {block['text'][:80]}")
+
+    # Step 2: Route blocks
+    audio_queue, llm_queue = nlp_based_router(document_blocks)
+
+    # Step 3: Output results
+    print("\n AUDIO QUEUE")
+    print("-" * 40)
     for item in audio_queue:
-        print(f" -> [{item['play_type']}] {item['text']}")
-    print("\n🧠 LLM GENERATION QUEUE (Sent to OpenAI API):")
+        print(item)
+
+    print("\n LLM QUEUE")
+    print("-" * 40)
     for item in llm_queue:
-        print(f" -> Expand this {item['type']}: {item['text']}")
+        print(item)
+
+    # Step 4: Basic Assertions (sanity checks)
+    assert len(audio_queue) > 0, "Audio queue should not be empty"
+    
+    # Ensure index lines go directly to audio
+    index_items = [x for x in audio_queue if x["play_type"] == "DIRECT_PLAY" and "...." in (x["text"] or "")]
+    assert len(index_items) > 0, "Index lines should be directly played"
+
+    # Ensure fragments go to LLM
+    llm_items = [x for x in audio_queue if x["play_type"] == "WAIT_FOR_LLM"]
+    assert len(llm_items) == len(llm_queue), "Mismatch between placeholders and LLM queue"
+
+    print("\n TEST PASSED: Routing logic behaves as expected")
+
+
+if __name__ == "__main__":
+    test_router_on_pdf()

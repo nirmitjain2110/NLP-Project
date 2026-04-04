@@ -7,3 +7,8 @@ python-dotenv==1.0.1
 
 # Audio Utilities (Optional Helper)
 pydub==0.25.1
+
+#OpenAi dependencies for LLM_Processing
+distro==1.9.0 
+jiter==0.13.0 
+openai==2.30.0
