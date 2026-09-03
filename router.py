@@ -1,4 +1,7 @@
 import re
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
 
 def get_context(blocks, current_index, window_size=2):
     """
@@ -28,20 +31,12 @@ def get_context(blocks, current_index, window_size=2):
 
 def contains_main_verb(text):
     """
-    Shallow parsing to check if the text contains a verb.
+    Dependency parsing to check if the text contains a ROOT token.
+    In spaCy's dependency parse, the ROOT is the main verb (or head)
+    of the sentence. If no ROOT is found, the text is a fragment.
     """
-    # 1. Check for explicit auxiliary / linking verbs
-    aux_verbs = r'\b(is|are|was|were|am|be|been|being|has|have|had|does|do|did|will|would|shall|should|can|could|may|might|must)\b'
-    if re.search(aux_verbs, text, re.IGNORECASE):
-        return True
-        
-    # 2. Check for words ending in 'ed' (common past-tense verbs)
-    # We exclude common words that end in 'ed' but aren't verbs (red, bed, etc.)
-    if re.search(r'\b\w{3,}ed\b', text, re.IGNORECASE) and not re.search(r'\b(red|bed|need|seed|weed|feed|hundred)\b', text, re.IGNORECASE):
-        return True
-
-    # If it fails the shallow checks, assume it lacks a main verb
-    return False
+    doc = nlp(text)
+    return any(token.dep_ == "ROOT" for token in doc)
 
 def nlp_based_router(document_blocks):
     audio_queue = []
@@ -60,14 +55,14 @@ def nlp_based_router(document_blocks):
             audio_queue.append({"play_type": "DIRECT_PLAY", "id": f"idx_{i}", "text": text})
             continue
             
-        # --- THE NEW LOGIC ---
-        # Shallow parse to see if it's a complete thought
+        # --- DEPENDENCY PARSING LOGIC ---
+        # Use spaCy to check if the text has a ROOT (main verb/head)
         if contains_main_verb(text):
-            # It has a verb! It doesn't need summarization.
+            # It has a ROOT! It's a complete thought, no summarization needed.
             audio_queue.append({"play_type": "DIRECT_PLAY", "id": f"txt_{i}", "text": text})
             
         else:
-            # It lacks a verb! It's a fragment and needs context/expansion.
+            # No ROOT found — it's a fragment and needs context/expansion.
             pid = f"pending_{i}"            
             
             # keep order intact in main queue with a placeholder
